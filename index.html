@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>World Connect</title>
+    <title>Spiritualité PDF</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -45,7 +45,6 @@
             --shadow-lg: 0 4px 20px rgba(0,0,0,0.5);
         }
 
-        /* Navbar optimisée */
         .navbar {
             position: fixed;
             top: 0;
@@ -183,6 +182,16 @@
             font-size: 9px;
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(255, 71, 87, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
         }
 
         .menu-dropdown {
@@ -523,7 +532,6 @@
             height: calc(100vh - var(--navbar-height) - 40px);
         }
 
-        /* Responsive Mobile */
         @media (max-width: 768px) {
             :root {
                 --navbar-height: 55px;
@@ -610,7 +618,6 @@
             }
         }
 
-        /* Responsive petits écrans */
         @media (max-width: 480px) {
             .navbar-left {
                 font-size: 14px;
@@ -637,7 +644,7 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="navbar-left">World Connect</div>
+        <div class="navbar-left">Spiritualité</div>
         <div class="navbar-center">
             <button class="theme-toggle" id="theme-toggle">
                 <i class="fas fa-moon" id="theme-icon"></i>
@@ -800,6 +807,7 @@
                 userProfile = await getUserProfile(currentUser.id);
                 updateMenu();
                 loadNotificationCount();
+                loadMessageCount();
             }
             loadArticles();
             initNavigation();
@@ -953,7 +961,8 @@
                     <div class="article-text">${article.texte}</div>
                     ${imagesHTML}
                     ${linksHTML}
-    </div><div class="reactions">
+                </div>
+                <div class="reactions">
                     <button class="reaction-btn" onclick="handleReaction('${article.article_id}', 'like')">
                         <i class="fas fa-thumbs-up"></i>
                         <span>${article.reaction_like || 0}</span>
@@ -1055,21 +1064,54 @@
 
         async function loadNotificationCount() {
             try {
-                const { data, error } = await supabase
+                const { count, error } = await supabase
                     .from('notifications')
-                    .select('*', { count: 'exact' })
+                    .select('*', { count: 'exact', head: true })
                     .eq('user_id', currentUser.id)
                     .eq('read_status', false);
 
-                if (data && data.length > 0) {
-                    const badge = document.getElementById('notif-badge');
-                    badge.textContent = data.length;
+                if (error) throw error;
+
+                const badge = document.getElementById('notif-badge');
+                if (count > 0) {
+                    badge.textContent = count;
                     badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Erreur notifications:', error);
             }
         }
+
+        async function loadMessageCount() {
+            try {
+                const { count, error } = await supabase
+                    .from('messages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('receiver_id', currentUser.id)
+                    .eq('read_status', false);
+
+                if (error) throw error;
+
+                const badge = document.getElementById('message-badge');
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erreur messages:', error);
+            }
+        }
+
+        setInterval(() => {
+            if (currentUser) {
+                loadNotificationCount();
+                loadMessageCount();
+            }
+        }, 30000);
     </script>
 </body>
-</html>
+    </html>
