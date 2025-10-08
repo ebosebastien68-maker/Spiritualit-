@@ -143,6 +143,18 @@
             flex-shrink: 0;
         }
 
+        .notif-icon.reaction {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .notif-icon.comment {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .notif-icon.reply {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
         .notif-content {
             flex: 1;
         }
@@ -174,36 +186,6 @@
             border-radius: 10px;
             font-size: 11px;
             font-weight: bold;
-        }
-
-        .notif-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .notif-action-btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .notif-action-btn.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .notif-action-btn.secondary {
-            background: #f0f0f0;
-            color: #666;
-        }
-
-        .notif-action-btn:hover {
-            transform: translateY(-1px);
         }
 
         .delete-btn {
@@ -285,7 +267,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>
                 <i class="fas fa-bell"></i>
@@ -296,7 +277,6 @@
             </button>
         </div>
 
-        <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" onclick="filterNotifications('all')">
                 <i class="fas fa-list"></i> Toutes
@@ -309,22 +289,18 @@
             </button>
         </div>
 
-        <!-- Filter Info -->
         <div class="filter-info" id="filter-info">
             <span id="filter-text">Toutes les notifications</span>
             <span class="count-badge" id="notif-count">0</span>
         </div>
 
-        <!-- Loader -->
         <div id="loader" class="loader">
             <div class="spinner"></div>
             <p style="color: #999;">Chargement des notifications...</p>
         </div>
 
-        <!-- Notifications List -->
         <div class="notifications-list" id="notifications-list"></div>
 
-        <!-- Empty State -->
         <div class="empty-state" id="empty-state" style="display: none;">
             <i class="fas fa-bell-slash"></i>
             <h3>Aucune notification</h3>
@@ -347,8 +323,6 @@
             }
 
             await loadNotifications();
-            
-            // Actualisation automatique toutes les 10 secondes
             setInterval(loadNotifications, 10000);
         });
 
@@ -376,7 +350,6 @@
         function filterNotifications(filter) {
             currentFilter = filter;
 
-            // Mettre à jour les tabs
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             event?.target?.classList.add('active');
 
@@ -415,7 +388,6 @@
                 container.appendChild(card);
             });
 
-            // Afficher/masquer le bouton "Tout marquer comme lu"
             const unreadCount = allNotifications.filter(n => !n.read_status).length;
             document.getElementById('mark-all-btn').style.display = unreadCount > 0 ? 'block' : 'none';
         }
@@ -425,10 +397,11 @@
             card.className = `notification-card ${!notif.read_status ? 'unread' : ''}`;
 
             const iconClass = getNotificationIcon(notif.texte);
+            const iconType = getNotificationType(notif.texte);
             const timeAgo = formatTimeAgo(notif.date_created);
 
             card.innerHTML = `
-                <div class="notif-icon">
+                <div class="notif-icon ${iconType}">
                     <i class="${iconClass}"></i>
                 </div>
                 <div class="notif-content">
@@ -446,7 +419,6 @@
                 </button>
             `;
 
-            // Marquer comme lu au clic
             if (!notif.read_status) {
                 card.addEventListener('click', (e) => {
                     if (!e.target.closest('.delete-btn')) {
@@ -461,19 +433,32 @@
         function getNotificationIcon(text) {
             const textLower = text.toLowerCase();
             
-            if (textLower.includes('article') || textLower.includes('publication')) {
-                return 'fas fa-newspaper';
-            } else if (textLower.includes('commentaire') || textLower.includes('réponse')) {
+            if (textLower.includes('réaction')) {
+                return 'fas fa-heart';
+            } else if (textLower.includes('commentaire')) {
                 return 'fas fa-comment';
+            } else if (textLower.includes('réponse')) {
+                return 'fas fa-reply';
+            } else if (textLower.includes('article') || textLower.includes('publication')) {
+                return 'fas fa-newspaper';
             } else if (textLower.includes('message')) {
                 return 'fas fa-envelope';
-            } else if (textLower.includes('réaction') || textLower.includes('like') || textLower.includes('aime')) {
-                return 'fas fa-heart';
-            } else if (textLower.includes('admin') || textLower.includes('système')) {
-                return 'fas fa-shield-alt';
             } else {
                 return 'fas fa-info-circle';
             }
+        }
+
+        function getNotificationType(text) {
+            const textLower = text.toLowerCase();
+            
+            if (textLower.includes('réaction')) {
+                return 'reaction';
+            } else if (textLower.includes('commentaire')) {
+                return 'comment';
+            } else if (textLower.includes('réponse')) {
+                return 'reply';
+            }
+            return '';
         }
 
         function formatTimeAgo(dateString) {
@@ -560,4 +545,4 @@
         }
     </script>
 </body>
-  </html>
+</html>
