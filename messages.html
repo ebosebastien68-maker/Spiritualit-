@@ -53,6 +53,7 @@
         .main-input-row { display: flex; gap: 10px; align-items: center; }
         .attach-btn { background: #f0f0f0; border: none; color: #667eea; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: all 0.3s; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .attach-btn:hover { background: #e0e0e0; transform: scale(1.05); }
+        .attach-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .input-wrapper { flex: 1; position: relative; display: flex; align-items: center; }
         .message-input { width: 100%; padding: 12px 20px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 14px; font-family: inherit; transition: border-color 0.3s; }
@@ -71,7 +72,7 @@
         .empty-state i { font-size: 60px; margin-bottom: 15px; color: #ddd; }
         .empty-state h3 { font-size: 16px; color: #666; margin-bottom: 8px; }
         
-        /* Modal (pas de changement) */
+        /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal.show { display: flex; }
         .modal-content { background: white; border-radius: 20px; width: 95%; max-width: 450px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; animation: modalSlide 0.3s ease; }
@@ -93,7 +94,7 @@
         .item-preview { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .item-unread { background: #667eea; color: white; border-radius: 10px; padding: 2px 7px; font-size: 10px; font-weight: bold; flex-shrink: 0; }
         
-        /* Scrollbar (pas de changement) */
+        /* Scrollbar */
         .chat-messages::-webkit-scrollbar { width: 8px; }
         .chat-messages::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         .chat-messages::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; }
@@ -117,8 +118,32 @@
             </div>
         </div>
     </div>
-    <div class="modal" id="conversations-modal"> </div>
-    <div class="modal" id="contacts-modal"> </div>
+    
+    <div class="modal" id="conversations-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-comments"></i> Conversations</h3>
+                <button class="close-modal" onclick="closeConversationsModal()">×</button>
+            </div>
+            <div class="modal-search">
+                <input type="text" id="search-conversations" placeholder="Rechercher...">
+            </div>
+            <div class="list-container" id="conversations-list"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="contacts-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="contacts-modal-title"><i class="fas fa-users"></i> Contacts</h3>
+                <button class="close-modal" onclick="closeContactsModal()">×</button>
+            </div>
+            <div class="modal-search">
+                <input type="text" id="search-contacts" placeholder="Rechercher...">
+            </div>
+            <div class="list-container" id="contacts-list"></div>
+        </div>
+    </div>
 
     <script src="supabaseClient.js"></script>
     <script>
@@ -140,9 +165,7 @@
         const DOMElements = {
             chatArea: document.getElementById('chat-area'),
             conversationsModal: document.getElementById('conversations-modal'),
-            contactsModal: document.getElementById('contacts-modal'),
-            conversationsList: document.getElementById('conversations-list'),
-            contactsList: document.getElementById('contacts-list')
+            contactsModal: document.getElementById('contacts-modal')
         };
         
         // --- INITIALIZATION ---
@@ -165,20 +188,18 @@
         }
 
         async function initInterface() {
-            // Logic unchanged, just uses state object
             if (state.userProfile.role === 'user') {
                 document.getElementById('contacts-btn-text').textContent = 'Admins';
-                document.getElementById('contacts-modal-title').textContent = 'Administrateurs';
+                document.getElementById('contacts-modal-title').innerHTML = '<i class="fas fa-users"></i> Administrateurs';
                 await initUserChat();
             } else {
                 document.getElementById('contacts-btn-text').textContent = 'Contacts';
-                document.getElementById('contacts-modal-title').textContent = 'Tous les contacts';
+                document.getElementById('contacts-modal-title').innerHTML = '<i class="fas fa-users"></i> Tous les contacts';
                 await initAdminChat();
             }
         }
         
         async function initUserChat() {
-            // Logic unchanged
             const storedAdminId = localStorage.getItem(`default_admin_${state.currentUser.id}`);
             let defaultAdmin = null;
 
@@ -213,7 +234,7 @@
         }
 
         // --- DATA LOADING & CACHING ---
-        async function loadConversations() { /* Logic mostly unchanged, just adapted for state */
+        async function loadConversations() {
             const { data: messages, error } = await supabase.from('messages')
                 .select('message_id, sender_id, receiver_id, texte, date_created, read_status, image_url')
                 .or(`sender_id.eq.${state.currentUser.id},receiver_id.eq.${state.currentUser.id}`)
@@ -245,7 +266,15 @@
             state.conversationsCache = Object.values(conversations).sort((a, b) => new Date(b.lastMessage.date_created) - new Date(a.lastMessage.date_created));
         }
 
-        async function loadContacts() { /* Logic unchanged */ }
+        async function loadContacts() {
+            const roleToFetch = state.userProfile.role === 'user' ? 'admin' : null;
+            let query = supabase.from('users_profile').select('user_id, prenom, nom, role').neq('user_id', state.currentUser.id);
+            if (roleToFetch) query = query.eq('role', roleToFetch);
+            
+            const { data, error } = await query;
+            if (error) { console.error('Error loading contacts:', error); return; }
+            state.contactsCache = data || [];
+        }
 
         async function loadMessages(otherUserId) {
             const { data, error } = await supabase.from('messages')
@@ -255,7 +284,9 @@
             if (error) { console.error('Error loading messages:', error); return; }
             
             const chatMessagesContainer = document.getElementById('chat-messages');
-            chatMessagesContainer.innerHTML = ''; // Clear before loading
+            if (!chatMessagesContainer) return;
+            
+            chatMessagesContainer.innerHTML = '';
             data.forEach(msg => appendMessage(msg, { prepend: false, scroll: false }));
             scrollToBottom(chatMessagesContainer);
         }
@@ -295,7 +326,6 @@
             markMessagesAsRead(user.user_id);
             subscribeToChannel(user.user_id);
 
-            // Add event listeners for the new chat area
             const messageInput = document.getElementById('message-input');
             const sendBtn = document.getElementById('send-btn');
             const imageInput = document.getElementById('image-input');
@@ -313,7 +343,6 @@
             const isSent = msg.sender_id === state.currentUser.id;
             const messageId = msg.message_id || msg.temp_id;
 
-            // Avoid duplicating optimistic message
             if (document.getElementById(`msg-${messageId}`)) return;
 
             const div = document.createElement('div');
@@ -345,6 +374,8 @@
             const sendBtn = document.getElementById('send-btn');
             const attachBtn = document.querySelector('.attach-btn');
 
+            if (!input || !sendBtn || !attachBtn) return;
+
             const text = input.value.trim();
             const imageFile = state.imageFile;
 
@@ -354,6 +385,7 @@
             const optimisticMessage = {
                 temp_id: tempId,
                 sender_id: state.currentUser.id,
+                receiver_id: state.currentChatUser.user_id,
                 texte: text,
                 image_url: imageFile ? URL.createObjectURL(imageFile) : null,
                 date_created: new Date().toISOString(),
@@ -362,9 +394,8 @@
 
             appendMessage(optimisticMessage);
             input.value = '';
-            cancelImageSelection(); // Clear preview
+            cancelImageSelection();
 
-            // Disable form while sending
             input.disabled = true;
             sendBtn.disabled = true;
             attachBtn.disabled = true;
@@ -380,21 +411,23 @@
                     imageUrl = data.publicUrl;
                 }
 
-                const { data: [newMessage], error } = await supabase.from('messages').insert({
+                const { data: newMessages, error } = await supabase.from('messages').insert({
                     sender_id: state.currentUser.id,
                     receiver_id: state.currentChatUser.user_id,
                     texte: text || null,
                     image_url: imageUrl
                 }).select();
+                
                 if (error) throw error;
                 
-                updateMessageStatus(tempId, newMessage);
+                if (newMessages && newMessages.length > 0) {
+                    updateMessageStatus(tempId, newMessages[0]);
+                }
 
             } catch (error) {
                 console.error('Send message error:', error);
                 updateMessageStatus(tempId, { ...optimisticMessage, status: 'failed' });
             } finally {
-                // Re-enable form
                 input.disabled = false;
                 sendBtn.disabled = false;
                 attachBtn.disabled = false;
@@ -412,29 +445,35 @@
 
             const channelName = `chat-${[state.currentUser.id, otherUserId].sort().join('-')}`;
             state.realtimeChannel = supabase.channel(channelName, {
-                config: { broadcast: { self: true } }
+                config: { broadcast: { self: false } }
             });
 
             state.realtimeChannel
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    // Only process if it's for the current chat and not my own optimistic message
-                    if ((payload.new.sender_id === otherUserId && payload.new.receiver_id === state.currentUser.id) ||
-                        (payload.new.sender_id === state.currentUser.id && payload.new.receiver_id === otherUserId && !document.getElementById(`msg-${payload.new.message_id}`))) {
+                .on('postgres_changes', { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'messages',
+                    filter: `sender_id=eq.${otherUserId}`
+                }, payload => {
+                    if (payload.new.receiver_id === state.currentUser.id && 
+                        state.currentChatUser?.user_id === otherUserId) {
                         appendMessage(payload.new);
-                        if (payload.new.sender_id === otherUserId) {
-                            markMessagesAsRead(otherUserId);
-                        }
+                        markMessagesAsRead(otherUserId);
                     }
                 })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
-                    // If a message was updated to 'read'
-                    if (payload.new.receiver_id === otherUserId && payload.new.sender_id === state.currentUser.id) {
-                         updateAllMyMessageStatusesAsRead();
+                .on('postgres_changes', { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'messages',
+                    filter: `receiver_id=eq.${otherUserId}`
+                }, payload => {
+                    if (payload.new.sender_id === state.currentUser.id && payload.new.read_status) {
+                        updateAllMyMessageStatusesAsRead();
                     }
                 })
                 .on('broadcast', { event: 'typing' }, ({ payload }) => {
                     if (payload.userId === otherUserId) {
-                         handleTypingIndicator(payload.isTyping);
+                        handleTypingIndicator(payload.isTyping);
                     }
                 })
                 .subscribe();
@@ -446,7 +485,7 @@
                 .update({ read_status: true })
                 .eq('sender_id', otherUserId)
                 .eq('receiver_id', state.currentUser.id)
-                .eq('read_status', false); // Only update unread ones
+                .eq('read_status', false);
         }
 
         // --- UI UTILITIES ---
@@ -469,40 +508,47 @@
         }
         
         function updateAllMyMessageStatusesAsRead() {
-             const sentMessages = document.querySelectorAll('.message-sent .message-status');
-             sentMessages.forEach(el => {
-                // Update only if not already read
+            const sentMessages = document.querySelectorAll('.message-sent .message-status');
+            sentMessages.forEach(el => {
                 if (!el.innerHTML.includes('fa-check-double')) {
                     el.innerHTML = '<i class="fas fa-check-double" style="color: #4fc3f7;"></i>';
                 }
-             });
+            });
         }
         
         function handleTyping() {
             if (!state.realtimeChannel) return;
             
             if (!state.typingTimeout) {
-                state.realtimeChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: true, userId: state.currentUser.id } });
+                state.realtimeChannel.send({ 
+                    type: 'broadcast', 
+                    event: 'typing', 
+                    payload: { isTyping: true, userId: state.currentUser.id } 
+                });
             } else {
                 clearTimeout(state.typingTimeout);
             }
             
             state.typingTimeout = setTimeout(() => {
-                state.realtimeChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false, userId: state.currentUser.id } });
+                state.realtimeChannel.send({ 
+                    type: 'broadcast', 
+                    event: 'typing', 
+                    payload: { isTyping: false, userId: state.currentUser.id } 
+                });
                 state.typingTimeout = null;
             }, 1500);
         }
         
         function handleTypingIndicator(isTyping) {
             const indicator = document.getElementById('typing-indicator');
-            if(indicator) indicator.textContent = isTyping ? 'est en train d\'écrire...' : '';
+            if (indicator) indicator.textContent = isTyping ? 'est en train d\'écrire...' : '';
         }
 
         function handleImageSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            if (file.size > 5 * 1024 * 1024) {
                 alert("L'image est trop grande (max 5MB).");
                 return;
             }
@@ -511,15 +557,20 @@
             const previewImg = document.getElementById('image-preview');
             const previewName = document.getElementById('image-preview-name');
             
-            previewImg.src = URL.createObjectURL(file);
-            previewName.textContent = file.name;
-            previewContainer.style.display = 'flex';
+            if (previewContainer && previewImg && previewName) {
+                previewImg.src = URL.createObjectURL(file);
+                previewName.textContent = file.name;
+                previewContainer.style.display = 'flex';
+            }
         }
         
         function cancelImageSelection() {
             state.imageFile = null;
-            document.getElementById('image-input').value = ''; // Reset file input
-            document.getElementById('image-preview-container').style.display = 'none';
+            const imageInput = document.getElementById('image-input');
+            const previewContainer = document.getElementById('image-preview-container');
+            
+            if (imageInput) imageInput.value = '';
+            if (previewContainer) previewContainer.style.display = 'none';
         }
 
         function handleKeyPress(event) {
@@ -530,25 +581,142 @@
         }
         
         function scrollToBottom(element) {
-            if(element) element.scrollTop = element.scrollHeight;
+            if (element) element.scrollTop = element.scrollHeight;
         }
 
-        function showEmptyState(title, subtitle = '') { DOMElements.chatArea.innerHTML = `<div class="empty-state"><i class="fas fa-comments"></i><h3>${title}</h3><p>${subtitle}</p></div>`; }
-        function escapeHtml(text) { return text ? document.createElement('div').appendChild(document.createTextNode(text)).parentNode.innerHTML : ''; }
-        function formatTime(dateString) { const date = new Date(dateString); return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+        function showEmptyState(title, subtitle = '') { 
+            DOMElements.chatArea.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h3>${title}</h3>
+                    ${subtitle ? `<p>${subtitle}</p>` : ''}
+                </div>
+            `; 
+        }
+        
+        function escapeHtml(text) { 
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatTime(dateString) { 
+            const date = new Date(dateString); 
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); 
+        }
 
-        // --- MODAL FUNCTIONS (Unchanged) ---
-        function openConversationsModal() { /* ... */ }
-        function closeConversationsModal() { /* ... */ }
-        function displayConversations(conversations) { /* ... */ }
-        function openContactsModal() { /* ... */ }
-        function closeContactsModal() { /* ... */ }
-        function displayContacts(contacts) { /* ... */ }
-        function filterList(type, query) { /* ... */ }
+        // --- MODAL FUNCTIONS ---
+        async function openConversationsModal() {
+            await loadConversations();
+            displayConversations(state.conversationsCache);
+            DOMElements.conversationsModal.classList.add('show');
+        }
+        
+        function closeConversationsModal() {
+            DOMElements.conversationsModal.classList.remove('show');
+        }
+        
+        function displayConversations(conversations) {
+            const container = document.getElementById('conversations-list');
+            if (!container) return;
+            
+            if (conversations.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 40px;"><i class="fas fa-inbox"></i><h3>Aucune conversation</h3></div>';
+                return;
+            }
+            
+            container.innerHTML = conversations.map(conv => {
+                const lastMsg = conv.lastMessage.texte || (conv.lastMessage.image_url ? '📷 Image' : '');
+                return `
+                    <div class="list-item" onclick="selectConversation('${conv.user.user_id}')">
+                        <div class="item-avatar">${conv.user.prenom[0]}${conv.user.nom[0]}</div>
+                        <div class="item-info">
+                            <div class="item-header">
+                                <span class="item-name">${conv.user.prenom} ${conv.user.nom}</span>
+                                <span class="item-time">${formatTime(conv.lastMessage.date_created)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <p class="item-preview">${escapeHtml(lastMsg)}</p>
+                                ${conv.unread > 0 ? `<span class="item-unread">${conv.unread}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function openContactsModal() {
+            await loadContacts();
+            displayContacts(state.contactsCache);
+            DOMElements.contactsModal.classList.add('show');
+        }
+        
+        function closeContactsModal() {
+            DOMElements.contactsModal.classList.remove('show');
+        }
+        
+        function displayContacts(contacts) {
+            const container = document.getElementById('contacts-list');
+            if (!container) return;
+            
+            if (contacts.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 40px;"><i class="fas fa-users"></i><h3>Aucun contact</h3></div>';
+                return;
+            }
+            
+            container.innerHTML = contacts.map(contact => `
+                <div class="list-item" onclick="selectContact('${contact.user_id}')">
+                    <div class="item-avatar">${contact.prenom[0]}${contact.nom[0]}</div>
+                    <div class="item-info">
+                        <div class="item-header">
+                            <span class="item-name">${contact.prenom} ${contact.nom}</span>
+                            <span class="item-role">${contact.role === 'admin' ? 'Admin' : 'Utilisateur'}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterList(type, query) {
+            const searchTerm = query.toLowerCase();
+            const dataSource = type === 'conversations' ? state.conversationsCache : state.contactsCache;
+            
+            const filtered = dataSource.filter(item => {
+                const user = type === 'conversations' ? item.user : item;
+                const fullName = `${user.prenom} ${user.nom}`.toLowerCase();
+                return fullName.includes(searchTerm);
+            });
+            
+            if (type === 'conversations') {
+                displayConversations(filtered);
+            } else {
+                displayContacts(filtered);
+            }
+        }
+        
+        async function selectConversation(userId) {
+            const conversation = state.conversationsCache.find(c => c.user.user_id === userId);
+            if (conversation) {
+                openChat(conversation.user);
+                closeConversationsModal();
+            }
+        }
+        
+        async function selectContact(userId) {
+            const contact = state.contactsCache.find(c => c.user_id === userId);
+            if (contact) {
+                openChat(contact);
+                closeContactsModal();
+            }
+        }
 
+        // --- CLEANUP ---
         window.addEventListener('beforeunload', () => {
-            if (state.realtimeChannel) supabase.removeChannel(state.realtimeChannel);
+            if (state.realtimeChannel) {
+                supabase.removeChannel(state.realtimeChannel);
+            }
         });
     </script>
 </body>
-</html>
+                    </html>
