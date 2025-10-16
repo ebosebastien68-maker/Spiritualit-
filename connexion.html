@@ -295,7 +295,7 @@
             <div id="reset-form" class="form-content">
                 <h2>Réinitialiser le mot de passe</h2>
                 <div class="info-text">
-                    Entrez votre adresse email. Si elle est enregistrée dans notre système, vous recevrez un lien pour créer un nouveau mot de passe.
+                    Entrez votre adresse email. Si elle est enregistrée dans notre système, vous recevrez un lien de vérification pour réinitialiser votre mot de passe.
                 </div>
                 <form id="password-reset-form">
                     <div class="input-group">
@@ -425,7 +425,7 @@
             }
         });
 
-        // Formulaire d'inscription - VERSION SIMPLIFIÉE
+        // Formulaire d'inscription
         document.getElementById('signup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             hideMessage();
@@ -454,7 +454,7 @@
                 // 2. Attendre que la session soit établie
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // 3. Créer le profil directement (insertion publique autorisée)
+                // 3. Créer le profil directement
                 const { error: profileError } = await supabase
                     .from('users_profile')
                     .insert({
@@ -471,7 +471,7 @@
 
                 console.log('Profil créé avec succès');
 
-                showMessage('Inscription réussie ! Comfirmer le lien Supabase Auth envoyé à votre email pour Finaliser Inscription Redirection...', 'success');
+                showMessage('Inscription réussie ! Confirmez le lien Supabase Auth envoyé à votre email pour finaliser votre inscription. Redirection...', 'success');
 
                 // 4. Redirection automatique vers index.html
                 setTimeout(() => {
@@ -494,7 +494,7 @@
             }
         });
 
-        // Formulaire de réinitialisation du mot de passe
+        // Formulaire de réinitialisation du mot de passe - MISE À JOUR
         document.getElementById('password-reset-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             hideMessage();
@@ -503,17 +503,17 @@
             const email = document.getElementById('reset-email').value;
 
             try {
-                // Envoyer le lien de réinitialisation
+                // Envoyer le lien de réinitialisation avec redirection vers auth.html
                 const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/reset-password.html`
+                    redirectTo: `${window.location.origin}/auth.html`
                 });
 
                 if (error) throw error;
 
-                // Message de succès (même si l'email n'existe pas, pour la sécurité)
+                // Message de succès
                 showMessage(
-                    'Si votre email est enregistré, vous recevrez un lien de réinitialisation dans quelques minutes.',
-                    'info'
+                    'Un email de vérification vous a été envoyé. Cliquez sur le lien pour réinitialiser votre mot de passe.',
+                    'success'
                 );
                 
                 toggleLoader(false);
@@ -524,13 +524,12 @@
             } catch (error) {
                 toggleLoader(false);
                 console.error('Erreur:', error);
-                // Message générique pour ne pas révéler si l'email existe ou non
                 showMessage(
-                    'Si votre email est enregistré, vous recevrez un lien de réinitialisation.',
-                    'info'
+                    error.message || 'Une erreur est survenue. Veuillez réessayer.',
+                    'error'
                 );
             }
         });
     </script>
 </body>
-    </html>
+                    </html>
