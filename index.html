@@ -31,6 +31,7 @@
             background: var(--bg-primary);
             padding-top: var(--navbar-height);
             transition: background 0.3s ease, color 0.3s ease;
+            perspective: 1500px;
         }
 
         body.dark-mode {
@@ -51,7 +52,6 @@
             left: 0;
             right: 0;
             height: var(--navbar-height);
-            /* MODIFICATION : Fond noir unique au lieu du dégradé */
             background: #000000;
             box-shadow: var(--shadow-md);
             padding: 0 15px;
@@ -141,19 +141,54 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
-        /* MODIFICATION : Nouvel emplacement et style pour le bouton de recherche */
+        /* Sélecteur d'effet de transition */
+        .transition-selector {
+            position: fixed;
+            top: var(--navbar-height);
+            right: 10px;
+            background: var(--bg-secondary);
+            border-radius: 0 0 12px 12px;
+            padding: 8px 12px;
+            box-shadow: var(--shadow-md);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .transition-selector select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .transition-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .transition-selector i {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
         .search-toggle-btn {
             position: fixed;
-            top: var(--navbar-height); /* Placé juste sous la barre de navigation */
+            top: var(--navbar-height);
             left: 10%;
             transform: translateX(-50%);
-            background: #1c1c1c; /* Couleur sombre pour s'harmoniser avec la barre noire */
+            background: #1c1c1c;
             border: none;
-            border-radius: 0 0 12px 12px; /* Forme d'onglet */
-            width: 60px; /* Plus large que haut */
-            height: 30px; /* Moins haut */
+            border-radius: 0 0 12px 12px;
+            width: 60px;
+            height: 30px;
             cursor: pointer;
-            display: flex; /* Assure que le bouton est visible par défaut sur la page d'accueil */
+            display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -162,16 +197,15 @@
         }
 
         .search-toggle-btn:hover {
-            background: #333; /* Changement de couleur au survol */
-            transform: translateX(-50%) translateY(2px); /* Léger mouvement vers le bas */
+            background: #333;
+            transform: translateX(-50%) translateY(2px);
         }
 
         .search-toggle-btn i {
-            font-size: 16px; /* Taille de l'icône ajustée */
-            color: #ffffff; /* Icône blanche pour le contraste */
+            font-size: 16px;
+            color: #ffffff;
             transition: transform 0.3s ease;
         }
-        /* FIN DES MODIFICATIONS DU BOUTON */
 
         .search-toggle-btn.active i {
             transform: rotate(180deg);
@@ -390,25 +424,146 @@
             margin: 0 auto;
             padding: 15px;
             margin-top: 30px;
+            position: relative;
+            transform-style: preserve-3d;
         }
 
         .spa-page {
             display: none;
-            animation: fadeIn 0.3s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            backface-visibility: hidden;
         }
 
         .spa-page.active {
             display: block;
+            position: relative;
+        }
+
+        /* Effet Slide */
+        .spa-page.transition-slide-exit {
+            animation: slideOutLeft 0.5s ease-out forwards;
+        }
+
+        .spa-page.transition-slide-enter {
+            animation: slideInRight 0.5s ease-out forwards;
+        }
+
+        @keyframes slideOutLeft {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-100%) scale(0.8);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        /* Effet Fade */
+        .spa-page.transition-fade-exit {
+            animation: fadeOut 0.4s ease-out forwards;
+        }
+
+        .spa-page.transition-fade-enter {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.95);
+            }
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1);
+            }
+        }
+
+        /* Effet Zoom */
+        .spa-page.transition-zoom-exit {
+            animation: zoomOut 0.5s ease-out forwards;
+        }
+
+        .spa-page.transition-zoom-enter {
+            animation: zoomIn 0.5s ease-out forwards;
+        }
+
+        @keyframes zoomOut {
+            from {
+                opacity: 1;
+                transform: scale(1) rotateY(0deg);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.3) rotateY(10deg);
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.3) rotateY(-10deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotateY(0deg);
+            }
+        }
+
+        /* Effet Flip */
+        .spa-page.transition-flip-exit {
+            animation: flipOut 0.6s ease-out forwards;
+        }
+
+        .spa-page.transition-flip-enter {
+            animation: flipIn 0.6s ease-out forwards;
+        }
+
+        @keyframes flipOut {
+            from {
+                opacity: 1;
+                transform: rotateY(0deg) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: rotateY(90deg) scale(0.8);
+            }
+        }
+
+        @keyframes flipIn {
+            from {
+                opacity: 0;
+                transform: rotateY(-90deg) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: rotateY(0deg) scale(1);
             }
         }
 
@@ -681,10 +836,9 @@
             height: calc(100vh - var(--navbar-height) - 40px);
         }
         
-        /* NOUVEAU: Styles pour les options d'administration */
         .admin-options {
             position: relative;
-            margin-left: auto; /* Pousse le bouton tout à droite */
+            margin-left: auto;
         }
 
         .options-btn {
@@ -755,7 +909,6 @@
             text-align: center;
         }
 
-
         @media (max-width: 768px) {
             :root {
                 --navbar-height: 55px;
@@ -806,7 +959,16 @@
                 top: calc(var(--navbar-height) - 2px);
             }
 
-            /* Ajustement pour le bouton de recherche sur mobile */
+            .transition-selector {
+                right: 5px;
+                padding: 6px 8px;
+            }
+
+            .transition-selector select {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
             .search-toggle-btn {
                 width: 50px;
                 height: 25px;
@@ -963,6 +1125,16 @@
         </div>
     </nav>
 
+    <div class="transition-selector">
+        <i class="fas fa-magic"></i>
+        <select id="transition-effect">
+            <option value="slide">Slide</option>
+            <option value="fade">Fade</option>
+            <option value="zoom">Zoom</option>
+            <option value="flip">Flip</option>
+        </select>
+    </div>
+
     <button class="search-toggle-btn" id="search-toggle-btn">
         <i class="fas fa-chevron-down"></i>
     </button>
@@ -1020,16 +1192,25 @@
     </div>
 
     <script src="supabaseClient.js"></script>
-    <script src="commentaires.js"></script><script>
+    <script src="commentaires.js"></script>
+    <script>
         const { supabase, getCurrentUser, getUserProfile } = window.supabaseClient;
         let currentUser = null;
         let userProfile = null;
         let allArticles = [];
         let isSearching = false;
+        let currentTransition = localStorage.getItem('transition-effect') || 'slide';
 
         const themeToggle = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
         const body = document.body;
+        const transitionSelect = document.getElementById('transition-effect');
+
+        transitionSelect.value = currentTransition;
+        transitionSelect.addEventListener('change', (e) => {
+            currentTransition = e.target.value;
+            localStorage.setItem('transition-effect', currentTransition);
+        });
 
         const savedTheme = localStorage.getItem('theme') || 'light';
         if (savedTheme === 'dark') {
@@ -1104,6 +1285,7 @@
         const pageManager = {
             loadedPages: new Set(['home']),
             iframes: {},
+            currentPage: 'home',
             async loadPage(pageName) {
                 if (this.loadedPages.has(pageName)) return;
                 const pageContainer = document.getElementById(`${pageName}-page`);
@@ -1189,27 +1371,48 @@
         }
 
         function navigateToPage(page, title) {
+            if (pageManager.currentPage === page) return;
+            
             const pageTitle = document.getElementById('page-title');
-            document.querySelectorAll('.spa-page').forEach(p => p.classList.remove('active'));
+            const oldPage = document.getElementById(`${pageManager.currentPage}-page`);
+            const newPage = document.getElementById(`${page}-page`);
+            
+            oldPage.classList.add(`transition-${currentTransition}-exit`);
+            
+            setTimeout(() => {
+                oldPage.classList.remove('active');
+                oldPage.classList.remove(`transition-${currentTransition}-exit`);
+                
+                newPage.style.display = 'block';
+                newPage.classList.add(`transition-${currentTransition}-enter`);
+                
+                requestAnimationFrame(() => {
+                    newPage.classList.add('active');
+                });
+                
+                setTimeout(() => {
+                    newPage.classList.remove(`transition-${currentTransition}-enter`);
+                }, 600);
+            }, currentTransition === 'flip' ? 600 : currentTransition === 'zoom' ? 500 : currentTransition === 'slide' ? 500 : 400);
+
             document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
-            document.getElementById(`${page}-page`).classList.add('active');
-            document.querySelector(`[data-page="${page}"]`).classList.add('active');
+            document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
             pageTitle.textContent = title;
 
-            // MODIFICATION : Gérer la visibilité du bouton de recherche
             if (page === 'home') {
-                searchToggleBtn.style.display = 'flex'; // Affiche le bouton sur la page d'accueil
+                searchToggleBtn.style.display = 'flex';
             } else {
-                searchToggleBtn.style.display = 'none'; // Cache le bouton sur les autres pages
-                // On s'assure aussi de fermer le panneau de recherche s'il est ouvert
+                searchToggleBtn.style.display = 'none';
                 searchPanel.classList.remove('show');
                 searchToggleBtn.classList.remove('active');
             }
-            // FIN DE LA MODIFICATION
 
             if (page !== 'home') {
                 pageManager.loadPage(page);
             }
+            
+            pageManager.currentPage = page;
+            
             if (page === 'messages') {
                 setTimeout(() => pageManager.preloadPage('notifications'), 1000);
             } else if (page === 'notifications') {
@@ -1332,8 +1535,9 @@
             }
         });
 
-        function editArticle(articleId) {window.location.href = `edit-article.html?id=${articleId}`;
-                                        }
+        function editArticle(articleId) {
+            window.location.href = `edit-article.html?id=${articleId}`;
+        }
 
         async function deleteArticle(articleId) {
             const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cet article définitivement ? Cette action est irréversible.");
@@ -1349,7 +1553,6 @@
                 }
             }
         }
-
 
         async function handleReaction(articleId, reactionType) {
             if (!currentUser || !userProfile) {
