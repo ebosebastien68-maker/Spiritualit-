@@ -1,535 +1,409 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion / Inscription</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Connexion — Professionnel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* palette or / bleu / blanc / noir */
+    --gold-1: #ffd166;
+    --gold-2: #f7b733;
+    --blue-1: #0b63ff;
+    --blue-2: #083f9d;
+    --bg: linear-gradient(135deg,#071129 0%, #0b1a2e 50%, #071129 100%);
+    --card-bg: rgba(255,255,255,0.04);
+    --glass: rgba(255,255,255,0.06);
+    --muted: rgba(255,255,255,0.8);
+    --white: #ffffff;
+    --shadow: 0 20px 60px rgba(2,8,23,0.6);
+    --radius: 16px;
+    --maxw: 1100px;
+  }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:var(--muted);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:24px}
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            width: 100%;
-            max-width: 450px;
-        }
+  /* Layout */
+  .wrap{
+    width:100%;
+    max-width:var(--maxw);
+    display:grid;
+    grid-template-columns: 520px 1fr;
+    gap:28px;
+    align-items:center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.02));
+    padding:28px;
+    border-radius:20px;
+    box-shadow:var(--shadow);
+    border: 1px solid rgba(255,255,255,0.03);
+    overflow:hidden;
+  }
 
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-        }
+  /* Left: avatar + stage */
+  .panel-left{
+    padding:32px;
+    min-height:520px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+    border-radius:14px;
+    position:relative;
+  }
 
-        .tab {
-            flex: 1;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 600;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
+  .stage{
+    width:360px;
+    height:420px;
+    perspective:1200px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
 
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            background: white;
-        }
+  /* Avatar container */
+  .avatar{
+    width:280px;
+    height:360px;
+    position:relative;
+    transform-style:preserve-3d;
+    transform-origin:center center;
+    transition: transform .3s ease;
+  }
 
-        .form-container {
-            padding: 40px;
-        }
+  /* subtle shadow floor */
+  .floor{
+    position:absolute;
+    bottom:12px;
+    left:50%;
+    transform:translateX(-50%);
+    width:68%;
+    height:22px;
+    background: radial-gradient(ellipse at center, rgba(2,8,23,0.6), rgba(2,8,23,0.18));
+    filter: blur(10px);
+    border-radius:50%;
+    z-index:0;
+  }
 
-        .form-content {
-            display: none;
-            animation: fadeIn 0.3s ease-in;
-        }
+  /* Torso */
+  .torso{
+    position:absolute;
+    left:50%; bottom:6%;
+    transform:translateX(-50%) translateZ(-40px);
+    width:220px; height:180px; border-radius:20px;
+    background: linear-gradient(180deg,var(--blue-1),var(--blue-2));
+    box-shadow: 0 18px 40px rgba(3,8,30,0.6), inset 0 -10px 30px rgba(0,0,0,0.12);
+    display:flex;align-items:flex-start;justify-content:center; padding-top:46px;
+  }
 
-        .form-content.active {
-            display: block;
-        }
+  /* Neck */
+  .neck{ position:absolute; left:50%; bottom:52%; transform:translateX(-50%) translateZ(8px); width:56px;height:36px;border-radius:8px;background:#f3d6c1; box-shadow: inset 0 -6px 8px rgba(0,0,0,0.06); }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+  /* Head */
+  .head{
+    position:absolute; left:50%; bottom:62%; transform:translateX(-50%) translateZ(72px);
+    width:150px;height:150px;border-radius:50%;
+    background: radial-gradient(circle at 30% 20%, #fff5ea, transparent 8%), linear-gradient(180deg,#f6d9c3,#f0c9b4);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.38);
+    transform-origin:50% 60%;
+    animation: head-move 6s ease-in-out infinite;
+    display:block;
+  }
+  @keyframes head-move{
+    0%,100%{ transform:translateX(-50%) translateZ(72px) rotateY(-6deg) rotateX(2deg)}
+    50%{ transform:translateX(-50%) translateZ(76px) rotateY(6deg) rotateX(-4deg)}
+  }
 
-        h2 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-        }
+  /* Hair (front) */
+  .hair{
+    position:absolute; left:50%; bottom:70%; transform:translateX(-50%) translateZ(90px);
+    width:170px;height:78px;border-radius:80px 80px 40px 40px; background: linear-gradient(180deg,#0f1724,#1c2a3a);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+    overflow:visible;
+  }
 
-        .input-group {
-            margin-bottom: 20px;
-        }
+  /* Eyes */
+  .eye{ position:absolute; top:46%; width:18px; height:18px; background:#fff;border-radius:50%; transform:translateZ(92px); box-shadow: inset 0 -4px 6px rgba(0,0,0,0.12); }
+  .eye.left{ left:34%; } .eye.right{ right:34%; }
+  .pupil{ width:8px;height:8px;border-radius:50%; background:#071129; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); animation: pupil-look 6s linear infinite; }
+  @keyframes pupil-look{ 0%{transform:translate(-50%,-50%) translateX(-1px)} 40%{transform:translate(-50%,-50%) translateX(6px)} 70%{transform:translate(-50%,-50%) translateX(-6px)} 100%{transform:translate(-50%,-50%) translateX(0px) } }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-        }
+  /* blink */
+  .eye-lid{ position:absolute; top:38%; left:50%; width:120px;height:26px; transform:translateX(-50%) translateZ(92px); overflow:hidden; pointer-events:none; border-radius:14px; }
+  .eye-lid span{ display:block; width:100%; height:100%; background:linear-gradient(180deg,#f0cfc0,#e7bda9); transform-origin:center top; animation: blink 5s steps(1) infinite; }
+  @keyframes blink{ 0%,92%{ transform:scaleY(0) } 94%,96%{ transform:scaleY(1) } 98%,100%{ transform:scaleY(0) } }
 
-        input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
+  /* nose & mouth */
+  .nose{ position:absolute; left:50%; bottom:30%; transform:translateX(-50%) translateZ(92px); width:10px;height:14px;border-radius:6px;background:rgba(0,0,0,0.06); }
+  .mouth{ position:absolute; left:50%; bottom:20%; transform:translateX(-50%) translateZ(92px); width:46px;height:26px;border-radius:18px/12px; background:linear-gradient(180deg,#c24f5a,#902a33); box-shadow: inset 0 6px 8px rgba(255,255,255,0.05); animation: mouth-talk 3.2s ease-in-out infinite; }
+  @keyframes mouth-talk{ 0%,100%{ transform: translateX(-50%) translateZ(92px) scaleY(1) } 50%{ transform: translateX(-50%) translateZ(92px) scaleY(0.78) } }
 
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+  /* arms - one arm gestures toward the form occasionally */
+  .arm{ position:absolute; top:46%; width:64px;height:120px;border-radius:32px; background: linear-gradient(180deg,var(--blue-1),var(--blue-2)); transform-origin:top center; box-shadow: 0 12px 26px rgba(0,0,0,0.36); }
+  .arm.left{ left:6%; transform: rotateZ(12deg) translateZ(-30px); animation: arm-swing-left 3.6s ease-in-out infinite; }
+  .arm.right{ right:6%; transform: rotateZ(-12deg) translateZ(-30px); animation: arm-gesture 6s ease-in-out infinite; }
+  @keyframes arm-swing-left{ 0%,100%{ transform: rotateZ(12deg) translateZ(-30px) } 50%{ transform: rotateZ(12deg) translateZ(-30px) translateY(6px) } }
+  @keyframes arm-gesture{ 0%,30%{ transform: rotateZ(-12deg) translateZ(-30px) } 40%{ transform: rotateZ(-32deg) translateZ(-30px) translateY(-6px) } 60%{ transform: rotateZ(-12deg) translateZ(-30px) } 100%{ transform: rotateZ(-12deg) translateZ(-30px) } }
 
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+  /* collar / badge */
+  .collar{ position:absolute; left:50%; bottom:60%; transform:translateX(-50%) translateZ(32px); width:120px;height:34px;border-radius:18px; background: linear-gradient(90deg,var(--gold-1),var(--gold-2)); box-shadow: inset 0 -6px 10px rgba(0,0,0,0.08); }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
+  /* breathing */
+  .torso, .collar{ animation: breathe 6s ease-in-out infinite; }
+  @keyframes breathe{ 0%,100%{ transform: translateX(-50%) translateZ(-40px) scaleY(1) } 50%{ transform: translateX(-50%) translateZ(-40px) scaleY(1.02) } }
 
-        .btn:active {
-            transform: translateY(0);
-        }
+  /* Right: form area */
+  .panel-right{
+    padding:36px;
+    border-radius:14px;
+    min-height:520px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    justify-content:center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.02));
+    border: 1px solid rgba(255,255,255,0.03);
+  }
 
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
+  .brand{
+    display:flex; gap:12px; align-items:center;
+  }
+  .logo{
+    width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--gold-1),var(--blue-1));display:grid;place-items:center;color:#071129;font-weight:800;font-size:18px;box-shadow: 0 6px 18px rgba(2,8,23,0.4);
+  }
+  .brand h1{ font-size:18px; color:var(--white); margin:0; font-weight:700; letter-spacing:0.2px }
 
-        .message {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            display: none;
-        }
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    padding:28px; border-radius:12px; box-shadow: 0 12px 40px rgba(2,8,23,0.45); border:1px solid rgba(255,255,255,0.02);
+  }
 
-        .message.error {
-            background: #fee;
-            color: #c33;
-            border: 1px solid #fcc;
-        }
+  .tabs{ display:flex; gap:8px; margin-bottom:14px; }
+  .tab{ flex:1; padding:12px 14px; text-align:center; cursor:pointer; font-weight:600; border-radius:10px; background:transparent; color:rgba(255,255,255,0.75); border:1px solid transparent; transition:all .22s ease; font-size:14px }
+  .tab.active{ background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); color:var(--white); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 6px 16px rgba(2,8,23,0.4) }
 
-        .message.success {
-            background: #efe;
-            color: #3c3;
-            border: 1px solid #cfc;
-        }
+  .form-row{ display:grid; gap:12px; margin-bottom:14px; }
+  label{ display:block; font-size:13px; color:rgba(255,255,255,0.85); margin-bottom:6px; font-weight:600 }
+  input, .btn{
+    width:100%; padding:12px 14px; border-radius:10px; font-size:15px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color:var(--white); outline:none;
+  }
+  input::placeholder{ color: rgba(255,255,255,0.5) }
+  input:focus{ box-shadow: 0 6px 22px rgba(11,99,255,0.08); border-color: rgba(11,99,255,0.2) }
 
-        .message.info {
-            background: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
-        }
+  .btn{
+    padding:14px; font-weight:700; cursor:pointer; background:linear-gradient(90deg,var(--blue-1),var(--blue-2)); border:none; color:var(--white); transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{ transform: translateY(-3px); box-shadow: 0 10px 28px rgba(11,99,255,0.14) }
 
-        .message.show {
-            display: block;
-        }
+  .muted{ color: rgba(255,255,255,0.7); font-size:13px }
 
-        .loader {
-            display: none;
-            text-align: center;
-            padding: 10px;
-        }
+  .info-banner{
+    display:flex; gap:12px; align-items:center; padding:12px; border-radius:10px; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.02);
+  }
 
-        .loader.show {
-            display: block;
-        }
+  /* speech bubble pointing to form */
+  .speech{
+    position:absolute; right:16px; top:26%; width:240px; background:linear-gradient(180deg,var(--white),rgba(255,255,255,0.92)); color:#071129; padding:14px; border-radius:12px; font-weight:600; box-shadow: 0 10px 26px rgba(2,8,23,0.45); transform: translateZ(30px);
+    display:flex; gap:10px; align-items:center; z-index:10;
+  }
+  .speech:after{
+    content:""; position:absolute; left:-12px; top:50%; transform:translateY(-50%); border:10px solid transparent; border-right-color:rgba(255,255,255,0.92);
+  }
+  .speech .dot{ width:10px;height:10px;border-radius:50%; background:linear-gradient(90deg,var(--gold-1),var(--gold-2)); box-shadow: 0 4px 10px rgba(2,8,23,0.25) }
 
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
+  /* small footer */
+  .foot{ margin-top:8px; text-align:center; color:rgba(255,255,255,0.6); font-size:13px }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .name-group {
-            display: flex;
-            gap: 15px;
-        }
-
-        .name-group .input-group {
-            flex: 1;
-        }
-
-        .info-text {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            color: #666;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .back-link {
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        .back-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  /* responsive */
+  @media (max-width:1100px){
+    .wrap{ grid-template-columns: 1fr; padding:18px }
+    .panel-left{ order:2 }
+    .panel-right{ order:1 }
+    .stage{ width:300px; height:320px }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="tabs">
-            <div class="tab active" data-tab="connexion">Connexion</div>
-            <div class="tab" data-tab="inscription">Inscription</div>
-            <div class="tab" data-tab="reset">Mot de passe</div>
+  <div class="wrap" role="main" aria-labelledby="title">
+    <!-- LEFT: avatar -->
+    <section class="panel-left" aria-hidden="false">
+      <div class="stage" aria-hidden="false">
+        <div class="avatar" aria-hidden="false" title="Avatar présentant le formulaire">
+          <div class="floor"></div>
+          <div class="torso"></div>
+          <div class="neck"></div>
+
+          <div class="arm left" aria-hidden="true"></div>
+          <div class="arm right" aria-hidden="true"></div>
+
+          <div class="head" aria-hidden="false">
+            <div class="hair"></div>
+            <div class="eye left"><div class="pupil"></div></div>
+            <div class="eye right"><div class="pupil"></div></div>
+            <div class="eye-lid"><span></span></div>
+            <div class="nose"></div>
+            <div class="mouth"></div>
+            <div class="collar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="speech" role="note" aria-live="polite">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          Bonjour 👋<br><small class="muted">Connecte-toi pour accéder à ton espace</small>
+        </div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="muted" style="max-width:320px; text-align:center">
+        Un design professionnel, animations subtiles, prêt pour Supabase — accessible et responsive.
+      </div>
+    </section>
+
+    <!-- RIGHT: form -->
+    <section class="panel-right" aria-labelledby="title">
+      <div class="brand">
+        <div class="logo">GO</div>
+        <div>
+          <h1 id="title">Jeux Online — Connexion</h1>
+          <div class="muted">Accède à ton tableau de bord</div>
+        </div>
+      </div>
+
+      <div class="card" role="form" aria-describedby="form-desc">
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" data-tab="connexion" aria-selected="true">Connexion</button>
+          <button class="tab" role="tab" data-tab="inscription" aria-selected="false">Inscription</button>
+          <button class="tab" role="tab" data-tab="reset" aria-selected="false">Mot de passe</button>
         </div>
 
-        <div class="form-container">
-            <!-- Message de notification -->
-            <div id="message" class="message"></div>
-            
-            <!-- Loader -->
-            <div id="loader" class="loader">
-                <div class="spinner"></div>
-                <p style="margin-top: 10px; color: #666;">Chargement...</p>
+        <div id="form-desc" class="muted" style="margin-bottom:8px">Utilise ton e-mail et mot de passe pour te connecter ou crée un compte.</div>
+
+        <!-- Messages -->
+        <div id="message" class="info-banner" style="display:none"></div>
+
+        <!-- Connexion -->
+        <form id="connexion-form" class="active" style="display:block">
+          <div class="form-row">
+            <label for="login-email">Email</label>
+            <input id="login-email" type="email" placeholder="exemple@domaine.com" required>
+          </div>
+          <div class="form-row">
+            <label for="login-password">Mot de passe</label>
+            <input id="login-password" type="password" placeholder="••••••••" required>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+            <button class="btn" id="login-btn" type="submit">Se connecter</button>
+            <a href="#" class="muted" id="forgot-link" style="text-decoration:none;align-self:center">Mot de passe oublié ?</a>
+          </div>
+        </form>
+
+        <!-- Inscription -->
+        <form id="inscription-form" style="display:none">
+          <div class="form-row" style="grid-template-columns:1fr 1fr;display:grid">
+            <div>
+              <label for="signup-prenom">Prénom</label>
+              <input id="signup-prenom" type="text" placeholder="John" required>
             </div>
-
-            <!-- Formulaire de Connexion -->
-            <div id="connexion-form" class="form-content active">
-                <h2>Bon retour !</h2>
-                <form id="login-form">
-                    <div class="input-group">
-                        <label for="login-email">Email</label>
-                        <input type="email" id="login-email" required placeholder="exemple@email.com">
-                    </div>
-                    <div class="input-group">
-                        <label for="login-password">Mot de passe</label>
-                        <input type="password" id="login-password" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn">Se connecter</button>
-                </form>
-                <div class="back-link">
-                    <a href="#" onclick="switchTab('reset'); return false;">Mot de passe oublié ?</a>
-                </div>
+            <div>
+              <label for="signup-nom">Nom</label>
+              <input id="signup-nom" type="text" placeholder="Doe" required>
             </div>
+          </div>
+          <div class="form-row">
+            <label for="signup-email">Email</label>
+            <input id="signup-email" type="email" placeholder="exemple@domaine.com" required>
+          </div>
+          <div class="form-row">
+            <label for="signup-password">Mot de passe</label>
+            <input id="signup-password" type="password" placeholder="••••••••" minlength="6" required>
+          </div>
+          <div style="display:flex;gap:12px">
+            <button class="btn" id="signup-btn" type="submit">S'inscrire</button>
+          </div>
+        </form>
 
-            <!-- Formulaire d'Inscription -->
-            <div id="inscription-form" class="form-content">
-                <h2>Créer un compte</h2>
-                <form id="signup-form">
-                    <div class="name-group">
-                        <div class="input-group">
-                            <label for="signup-prenom">Prénom</label>
-                            <input type="text" id="signup-prenom" required placeholder="John">
-                        </div>
-                        <div class="input-group">
-                            <label for="signup-nom">Nom</label>
-                            <input type="text" id="signup-nom" required placeholder="Doe">
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="signup-email">Email</label>
-                        <input type="email" id="signup-email" required placeholder="exemple@email.com">
-                    </div>
-                    <div class="input-group">
-                        <label for="signup-password">Mot de passe</label>
-                        <input type="password" id="signup-password" required placeholder="••••••••" minlength="6">
-                    </div>
-                    <button type="submit" class="btn">S'inscrire</button>
-                </form>
-            </div>
+        <!-- Reset -->
+        <form id="reset-form" style="display:none">
+          <div class="form-row">
+            <label for="reset-email">Email</label>
+            <input id="reset-email" type="email" placeholder="exemple@domaine.com" required>
+          </div>
+          <div style="display:flex;gap:12px">
+            <button class="btn" id="reset-btn" type="submit">Envoyer le lien</button>
+          </div>
+        </form>
+      </div>
 
-            <!-- Formulaire Mot de passe oublié -->
-            <div id="reset-form" class="form-content">
-                <h2>Réinitialiser le mot de passe</h2>
-                <div class="info-text">
-                    Entrez votre adresse email. Si elle est enregistrée dans notre système, vous recevrez un lien de vérification pour réinitialiser votre mot de passe.
-                </div>
-                <form id="password-reset-form">
-                    <div class="input-group">
-                        <label for="reset-email">Email</label>
-                        <input type="email" id="reset-email" required placeholder="exemple@email.com">
-                    </div>
-                    <button type="submit" class="btn">Envoyer le lien</button>
-                </form>
-                <div class="back-link">
-                    <a href="#" onclick="switchTab('connexion'); return false;">Retour à la connexion</a>
-                </div>
-            </div>
-        </div>
-    </div>
+      <div class="foot">© <span id="year"></span> — Tous droits réservés</div>
+    </section>
+  </div>
 
-    <script src="supabaseClient.js"></script>
-    <script>
-        // Attendre que supabaseClient soit chargé
-        let supabase, getCurrentUser, getUserProfile, redirectByRole;
+<script>
+  // small UI interactions: tabs + friendly messages
+  document.getElementById('year').textContent = new Date().getFullYear();
 
-        function initializeApp() {
-            if (window.supabaseClient) {
-                ({ supabase, getCurrentUser, getUserProfile, redirectByRole } = window.supabaseClient);
-                checkIfLoggedIn();
-            } else {
-                setTimeout(initializeApp, 100);
-            }
-        }
+  const tabs = document.querySelectorAll('.tab');
+  const forms = {
+    connexion: document.getElementById('connexion-form'),
+    inscription: document.getElementById('inscription-form'),
+    reset: document.getElementById('reset-form')
+  };
 
-        // Vérifier si déjà connecté au chargement
-        async function checkIfLoggedIn() {
-            const user = await getCurrentUser();
-            if (user) {
-                await redirectByRole();
-            }
-        }
+  tabs.forEach(t => t.addEventListener('click', (e) => {
+    tabs.forEach(x=>x.classList.remove('active'));
+    tabs.forEach(x=>x.setAttribute('aria-selected', 'false'));
+    t.classList.add('active');
+    t.setAttribute('aria-selected', 'true');
 
-        // Initialiser l'app
-        window.addEventListener('DOMContentLoaded', initializeApp);
+    const tab = t.getAttribute('data-tab');
+    Object.keys(forms).forEach(k => {
+      forms[k].style.display = (k === tab) ? 'block' : 'none';
+    });
 
-        // Gestion des onglets
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', function(e) {
-                e.preventDefault();
-                const tabName = this.getAttribute('data-tab');
-                switchTab(tabName);
-            });
-        });
+    // update speech bubble text for quick feedback
+    const speech = document.querySelector('.speech div:nth-child(2)');
+    if(tab==='connexion') speech.innerHTML = 'Bonjour 👋<br><small class="muted">Connecte-toi pour accéder à ton espace</small>';
+    if(tab==='inscription') speech.innerHTML = 'Bienvenue ✨<br><small class="muted">Crée un compte en quelques secondes</small>';
+    if(tab==='reset') speech.innerHTML = 'Besoin d\'aide ?<br><small class="muted">On t\'envoie le lien de réinitialisation</small>';
+  }));
 
-        function switchTab(tab) {
-            // Retirer la classe active de tous les onglets et formulaires
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
-            
-            // Ajouter la classe active à l'onglet et formulaire sélectionnés
-            const selectedTab = document.querySelector(`[data-tab="${tab}"]`);
-            const selectedForm = document.getElementById(`${tab}-form`);
-            
-            if (selectedTab) selectedTab.classList.add('active');
-            if (selectedForm) selectedForm.classList.add('active');
-            
-            hideMessage();
-        }
+  // placeholder logic: show a message banner on submit. Replace with Supabase calls.
+  function showMessage(text, tone='info'){
+    const el = document.getElementById('message');
+    el.style.display = 'flex';
+    el.style.background = (tone==='error') ? 'linear-gradient(90deg,#ffefef,#ffdede)' : 'linear-gradient(90deg,#f0f7ff,#e6f0ff)';
+    el.style.color = (tone==='error') ? '#6a0019' : '#05204a';
+    el.style.border = (tone==='error') ? '1px solid #ffd6d6' : '1px solid rgba(11,99,255,0.12)';
+    el.textContent = text;
+  }
+  function hideMessage(){ const el = document.getElementById('message'); el.style.display='none'; el.textContent=''; }
 
-        // Afficher un message
-        function showMessage(text, type) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = `message ${type} show`;
-        }
+  // demo submit handlers (replace with Supabase integration)
+  document.getElementById('connexion-form').addEventListener('submit', async (e)=>{
+    e.preventDefault(); hideMessage();
+    showMessage('Connexion en cours…', 'info');
+    // TODO: remplacer avec supabase.auth.signInWithPassword(...)
+    setTimeout(()=> showMessage('Connexion réussie — redirection...', 'info'), 1000);
+  });
 
-        // Cacher le message
-        function hideMessage() {
-            const msg = document.getElementById('message');
-            msg.classList.remove('show');
-        }
+  document.getElementById('inscription-form').addEventListener('submit', async (e)=>{
+    e.preventDefault(); hideMessage();
+    showMessage('Création du compte…', 'info');
+    // TODO: remplacer avec supabase.auth.signUp(...) puis insertion profil
+    setTimeout(()=> showMessage('Inscription réussie — vérifie ton e-mail', 'info'), 1200);
+  });
 
-        // Afficher/cacher le loader
-        function toggleLoader(show) {
-            const loader = document.getElementById('loader');
-            const activeForm = document.querySelector('.form-content.active');
-            
-            if (show) {
-                loader.classList.add('show');
-                if (activeForm) activeForm.style.display = 'none';
-            } else {
-                loader.classList.remove('show');
-                if (activeForm) activeForm.style.display = 'block';
-            }
-        }
-
-        // Formulaire de connexion
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideMessage();
-            toggleLoader(true);
-
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-
-            try {
-                // Connexion avec Supabase Auth
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) throw error;
-
-                // Récupérer le profil utilisateur
-                const profile = await getUserProfile(data.user.id);
-
-                if (!profile) {
-                    throw new Error('Profil utilisateur introuvable. Contactez l\'administrateur.');
-                }
-
-                // Redirection selon le rôle
-                showMessage('Connexion réussie ! Redirection...', 'success');
-                
-                setTimeout(async () => {
-                    await redirectByRole();
-                }, 1500);
-
-            } catch (error) {
-                toggleLoader(false);
-                showMessage(error.message || 'Erreur de connexion', 'error');
-            }
-        });
-
-        // Formulaire d'inscription
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideMessage();
-            toggleLoader(true);
-
-            const prenom = document.getElementById('signup-prenom').value.trim();
-            const nom = document.getElementById('signup-nom').value.trim();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-
-            try {
-                // 1. Créer le compte Auth
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email,
-                    password: password
-                });
-
-                if (authError) throw authError;
-
-                if (!authData.user) {
-                    throw new Error('Erreur lors de la création du compte');
-                }
-
-                console.log('Compte Auth créé:', authData.user.id);
-
-                // 2. Attendre que la session soit établie
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // 3. Créer le profil directement
-                const { error: profileError } = await supabase
-                    .from('users_profile')
-                    .insert({
-                        user_id: authData.user.id,
-                        prenom: prenom,
-                        nom: nom,
-                        role: 'user'
-                    });
-
-                if (profileError) {
-                    console.error('Erreur profil:', profileError);
-                    throw new Error(`Erreur lors de la création du profil: ${profileError.message}`);
-                }
-
-                console.log('Profil créé avec succès');
-
-                showMessage('Inscription réussie ! Confirmez le lien Supabase Auth envoyé à votre email pour finaliser votre inscription. Redirection...', 'success');
-
-                // 4. Redirection automatique vers index.html
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 2000);
-
-            } catch (error) {
-                toggleLoader(false);
-                console.error('Erreur complète:', error);
-                showMessage(error.message || 'Erreur lors de l\'inscription', 'error');
-                
-                // Si l'erreur vient du profil, supprimer le compte Auth créé
-                if (error.message.includes('profil')) {
-                    try {
-                        await supabase.auth.signOut();
-                    } catch (e) {
-                        console.error('Erreur lors du nettoyage:', e);
-                    }
-                }
-            }
-        });
-
-        // Formulaire de réinitialisation du mot de passe - MISE À JOUR
-        document.getElementById('password-reset-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideMessage();
-            toggleLoader(true);
-
-            const email = document.getElementById('reset-email').value;
-
-            try {
-                // Envoyer le lien de réinitialisation avec redirection vers auth.html
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/auth.html`
-                });
-
-                if (error) throw error;
-
-                // Message de succès
-                showMessage(
-                    'Un email de vérification vous a été envoyé. Cliquez sur le lien pour réinitialiser votre mot de passe.',
-                    'success'
-                );
-                
-                toggleLoader(false);
-
-                // Réinitialiser le formulaire
-                document.getElementById('password-reset-form').reset();
-
-            } catch (error) {
-                toggleLoader(false);
-                console.error('Erreur:', error);
-                showMessage(
-                    error.message || 'Une erreur est survenue. Veuillez réessayer.',
-                    'error'
-                );
-            }
-        });
-    </script>
+  document.getElementById('reset-form').addEventListener('submit', async (e)=>{
+    e.preventDefault(); hideMessage();
+    showMessage('Envoi du lien de réinitialisation…', 'info');
+    // TODO: supabase.auth.resetPasswordForEmail(...)
+    setTimeout(()=> showMessage('Lien envoyé ! Vérifie ta boîte mail', 'info'), 1000);
+  });
+</script>
 </body>
-                    </html>
+</html>
